@@ -348,3 +348,30 @@ NonConstFunc(const_cast<Some>(s))
     * 함수 포인터도 포인터의 한 종류이기 때문에 운영체제가 메모리 주소를 표현하는 크기를 따라갑니다.
     * 예를 들어, 64비트 운영체제에서는 메모리 주소를 64비트 크기로 표현하기에 포인터는 8 바이트의 크기를 가질 수 있습니다.
         * 32비트 운영체제는 4바이트
+
+## const의 다양한 사용 방법을 설명하라
+* 변수 앞에 const를 붙여 상수화 시킬 수 있습니다.
+* 특히 포인터에서 다양하게 사용할 수 있습니다. 
+    * `const Type*` : 포인터가 가리키는 데이터를 상수화 (데이터 변경 불가)
+    * `Type* const` : 포인터 자체를 상수화 (주소 변경 불가)
+    * `const Type* const` : 둘 모두 상수화
+* `const Type&` 참조하는 대상을 상수화시킵니다.
+* `Func() const` : const 멤버 함수
+    * const 객체에서도 호출 가능
+    * const 멤버 함수 내부에서는 멤버 변수 수정이 불가
+    * mutable 키워드가 붙은 멤버 변수는 예외적으로 수정 가능
+* `Func(const Type& _str)` const 매개변수
+    * 복사 비용없이 원본 데이터 보호
+* `constexpr` (C++ 11)
+    * const : 런타임 상수
+    * constexpr : 컴파일 타임 상수
+        * constexpr 상수를 적용하는 경우 컴파일 시 값이 정해지므로 빌드 시, 코드를 최적화하는데 도움이 된다.
+* `const TArray<AActor*>& GetActors() const { return ~}` const 반환
+    * const 반환으로 내부 데이터 보호
+* `UFUNCTION(BlueprintPure) int32 GetHP() const { return ~ }`
+    * BlueprintPure는 보통 const 함수와 함께 사용
+    * BlueprintPure : 순수함수
+        * 동일한 입력에 대해 동일한 결과가 나옴
+        * 실행 핀이 없음
+        * 외부 상태를 변경하지 않음
+        * 일반적으로 값을 구해오거나 데이터값을 출력하기만 하는 작업에 사용
