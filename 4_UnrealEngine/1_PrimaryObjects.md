@@ -36,6 +36,29 @@
 * 멀티플레이 환경에서 Replication (복제) 가능
 ### 라이프사이클 함수가 존재
 * Beginplay, Tick, Endplay, Destroyed 등 라이프사이클 함수가 존재
+* 주요 라이프사이클 함수의 호출 시점
+    * BeginPlay
+        * 게임 시작 시 레벨에 배치된 액터
+        또는 런타임에 SpawnActor()로 생성된 액터가 
+        초기화를 완료한 후 최초 1회 호출
+        * 게임 로직 초기화에 사용
+    * Tick
+        * 매 프레임마다 호출
+        * bCanEverTick = false;로 비활성화 가능 (성능 최적화)
+        * TickInterval로 호출 간격 조정 가능
+    * EndPlay : 액터가 정리될 때 호출
+        * 액터가 Destory(), 레벨 전환, 게임 종료 등의 이유로 월드에서 제거될 때 호출
+        * EEndPlayReason으로 호출 원인 구분 가능
+        * 타이머, 델리게이트 등 리소스 정리에 적합한 시점
+* Constructor와 BeginPlay의 차이
+    * Constructor : 
+        * 에디터에서도 실행.
+        * 컴포넌트 생성 및 기본값 설정 등의 목적을 위해 사용
+        * 단, 게임 로직이 포함되어선 안됨 -> 아직 월드가 실행된 시점이 아니기 때문
+    * BeginPlay :
+        * 게임 실행 시점에서만 호출
+        * 월드, 다른 액터가 참조 가능
+        * 게임 로직 최적화에 적합
 
 ## APawn
 * 플레이어나 AI가 조종할 수 있는 액터
@@ -64,3 +87,28 @@
 * 중력, 공중 제어 : UCharacterMovementComponent
 * 애니메이션 연동 : USkeletalMeshComponent과 UAnimInstance와 쉽게 연결하여 애니메이션 처리
 * 네트워크 복제(Replicate) 지원
+
+## Component
+* 컴포넌트 기반 설계
+    * 객체를 확장하는 방법 중 하나로 객체에 부품(컴포넌트)을 조합하여 기능을 확장하는 방법입니다.
+    * 상속의 경우, 컴파일 타임에 클래스 구조가 고정되고, 기능 추가 시 새로운 파생 클래스를 만들어야 하기에 런타임 중에 기능을 확장하기 어렵습니다.
+    * 런타임에 동적으로 컴포넌트를 추가, 제거 가능하고, 기능 단위로 재사용할 수 있습니다.
+### 주요 컴포넌트
+- CapsuleComponent (그외 ShapeComponent) : 콜리전 처리를 위해 사용
+- CharacterMovementComponent : 캐릭터의 이동 로직 처리를 위해
+- WidgetComponent : 3D 공간에 UI를 표시하기 위해
+- NiagaraComponent : 나이아가라를 이용한 VFX 재생을 위해
+- AudioComponent : 사운드 재생을 위해
+- 그 외에도 콤보 액션 연계나 캐릭터의 스탯 기능을 위해 자체 액터 컴포넌트를 작성하기도 함
+### ActorComponent vs SceneComponent
+* ActorComponent
+    * 액터에 장착시킬 수 있는 컴포넌트들의 기반 클래스
+    * Transform 속성이 없어 3D 공간 상의 위치, 회전, 크기 개념이 없음
+        * Attach 불가 -> 다른 컴포넌트에 붙일 수 없음
+    * 순수 로직, 기능 처리에 적합    
+* SceneComponent
+    * 액터 컴포넌트를 상속하여 Transform 속성을 가진 클래스.
+    * 다른 SceneComponent에 Attach 가능
+        * 계층 구조 구성 가능
+    * 액터의 RootComponent 역할을 할 수 있다.
+* Transform, Attach 기능의 차이 여부가 핵심
