@@ -88,19 +88,42 @@
 * 애니메이션 연동 : USkeletalMeshComponent과 UAnimInstance와 쉽게 연결하여 애니메이션 처리
 * 네트워크 복제(Replicate) 지원
 
-## Component
+## 객체 간 차이, AActor와 APawn, ACharacter의 차이점
+* AActor
+    * UObject를 상속해서 레벨에 배치할 수 있는 객체의 기반 클래스
+    * Transform, Tick, 라이프 사이클, 네트워크 리플리케이션 지원
+    * 컴포넌트 부착으로 기능 확장
+    * SpawnActor로 인스턴스화 가능
+* APawn
+    * AActor를 상속한 클래스
+    * PlayerController 또는 AIController에 의해 Possess(빙의)되어 조종할 수 있다.
+    * SetupPlayerInputComponent()로 입력을 바인딩할 수 있다
+    * 기본 이동 컴포넌트가 없어, 별도로 부착해줘야한다.
+* ACharacter
+    * APawn을 상속한 클래스
+    * 기본적으로 몇가지 컴포넌트들이 부착되어 있다.
+        * UCapsuleComponent : 충돌체 용도이며 루트 컴포넌트로 설정되어 있다.
+        * UCharacterMovementComponent : 이동 로직이 구현되어 있으며, 네트워크 동기화를 지원한다.
+        * USkeletalMeshComponent : 스켈레탈 메쉬 표현과 애니메이션을 기능을 지원한다.
+    * 이를 통해 지상형 캐릭터를 만드는 기본 틀을 제공한다
+* 선택 기준
+    * 조종이 불필요하고 단순 레벨에 배치 용도 -> AActor
+    * 조종해야하고, 지상 이동 외의 방식으로 이동 -> APawn
+    * 지상 이동하는 캐릭터 -> ACharacter
+
+# Component
 * 컴포넌트 기반 설계
     * 객체를 확장하는 방법 중 하나로 객체에 부품(컴포넌트)을 조합하여 기능을 확장하는 방법입니다.
     * 상속의 경우, 컴파일 타임에 클래스 구조가 고정되고, 기능 추가 시 새로운 파생 클래스를 만들어야 하기에 런타임 중에 기능을 확장하기 어렵습니다.
     * 런타임에 동적으로 컴포넌트를 추가, 제거 가능하고, 기능 단위로 재사용할 수 있습니다.
-### 주요 컴포넌트
+## 주요 컴포넌트
 - CapsuleComponent (그외 ShapeComponent) : 콜리전 처리를 위해 사용
 - CharacterMovementComponent : 캐릭터의 이동 로직 처리를 위해
 - WidgetComponent : 3D 공간에 UI를 표시하기 위해
 - NiagaraComponent : 나이아가라를 이용한 VFX 재생을 위해
 - AudioComponent : 사운드 재생을 위해
 - 그 외에도 콤보 액션 연계나 캐릭터의 스탯 기능을 위해 자체 액터 컴포넌트를 작성하기도 함
-### ActorComponent vs SceneComponent
+## ActorComponent vs SceneComponent
 * ActorComponent
     * 액터에 장착시킬 수 있는 컴포넌트들의 기반 클래스
     * Transform 속성이 없어 3D 공간 상의 위치, 회전, 크기 개념이 없음
@@ -112,3 +135,28 @@
         * 계층 구조 구성 가능
     * 액터의 RootComponent 역할을 할 수 있다.
 * Transform, Attach 기능의 차이 여부가 핵심
+
+# CDO : Class Default Object
+* 클래스가 로드될 때 언리얼 엔진이 자동으로 생성하는 해당 클래스의 기본 인스턴스
+* CDO 생성 시점
+    * 엔진 초기화 시점 (게임 실행 전)
+    * 각 UCLASS에 대해 1개씩 자동생성
+    * 엔진 시작 시, 생성자 호출로 만들어지는 객체가 이것
+## CDO 목적
+* 해당 클래스의 기본 값 저장소 역할
+* 새 인스턴스 생성 시 CDO의 값을 복사하여 초기화
+* 에디터의 Details 패널 기본값이 곧 CDO 값
+## 핵심 특징
+* 클래스 당 1개만 존재 (싱글톤과 유사하지만 다름)
+* 게임 로직 실행 대상이 아님 (BeginPlay 호출 안됨)
+    * CDO를 통해서 특정 게임 로직 함수를 호출하는 것은 부적절
+    * 기본값 읽기 용도로 사용
+* 직접 수정 가능하지만 일반적으로 권장하지 않음
+    * UPROPERTY() 매크로에서 CDO의 값에 대한 수정 범위를 열어둘 수 있음
+        * EditAnywhere : CDO, Instance 어디서든 수정 가능
+        * EditDefaultOnly : CDO 값(BP 기본값) 수정 가능
+        * EditInstanceOnly : 배치된 인스턴스만 수정 가능
+* GetClass()->GetDefaultObject()로 접근 가능
+## 요약
+* CDO는 클래스당 1개만 존재하는 기본 인스턴스로,<br>새 객체 생성 시 기본값의 원본 역할을 하며
+에디터의 Details 패널 기본값이 CDO의 값입니다.
