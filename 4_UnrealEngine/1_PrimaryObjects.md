@@ -158,5 +158,38 @@
         * EditInstanceOnly : 배치된 인스턴스만 수정 가능
 * GetClass()->GetDefaultObject()로 접근 가능
 ## 요약
-* CDO는 클래스당 1개만 존재하는 기본 인스턴스로,<br>새 객체 생성 시 기본값의 원본 역할을 하며
+* CDO는 클래스당 1개만 존재하는 기본 인스턴스로<br>새 객체 생성 시 기본값의 원본 역할을 하며
 에디터의 Details 패널 기본값이 CDO의 값입니다.
+
+# Actor의 라이프사이클
+## Spawn과 Destroy 라이프사이클
+* 라이프사이클을 묻는 질문 -> 단계별 흐름이 핵심
+* Spawn : Actor를 동적으로 생성하는 메서드
+    * 내부 처리 단계
+        1. 생성자 호출 : 객체 메모리 할당 및 기본값 초기화
+            * 컴포넌트 생성 (CreateDefaultSubobject 방식)
+        2. PostInitializeComponents
+            * 모든 컴포넌트 초기화 완료 후 호출
+            * 컴포넌트 간 상호참조가 가능한 시점
+        3. BeginPlay
+            * 게임 로직 시작 시점
+            * 다른 Actor 참조, 타이머 등록 등 가능
+    * 레벨에 미리 배치된 상태인 경우, 과정은 동일하나 생성되는 시점이 다름
+        * Spawn은 호출 시점에 위 과정이 실행
+        * 레벨에 미리 배치된 경우는 게임 시작 시 실행
+* Destory : Actor에게 수동으로 Destory 호출 또는 레벨 정리 시 Actor를 제거하는 메서드
+    * 내부 처리 단계
+        1. EndPlay(EEndPlayReason)
+            * 게임 로직 정리 시점
+            * 타이머 해제, 델리게이트 언바인드 등
+            * EEndPlayReason을 통한 호출 원인 구분 가능
+        2. BeginDestroy()
+            * 렌더링 리소스 등 엔진 리소스 해제 시작
+            * GC에 수거 대상 등록
+        3. IsReadyForFinishDestroy → FinishDestroy
+            * 실제 메모리 해제
+            * GC가 처리하는 시점
+    * Destroy()가 호출되면 즉시 메모리에서 삭제되는 것은 아님
+        * EndPlay 호출 후에 GC 수거 대상으로 등록
+        * 실제 메모리 해제는 다음 GC 사이클에서 처리됨
+            -> 이 때문에 TWeakObjectPtr / IsValid 체크가 중요함
